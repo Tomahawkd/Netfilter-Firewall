@@ -1,3 +1,8 @@
+ifndef MAKEFILE_CORE
+define MAKEFILE_CORE
+yes
+endef
+
 obj-m += test_module.o
 
 PWD  := $(shell pwd)
@@ -8,3 +13,5 @@ all:
 
 clean:
 	$(MAKE) -C /lib/modules/$(shell uname -r)/build M=$(PWD) clean
+
+endif
