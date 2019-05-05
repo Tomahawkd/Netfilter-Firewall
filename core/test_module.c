@@ -4,7 +4,7 @@
 #include <linux/netfilter_ipv4.h>
 #include <linux/ip.h>
 #include <linux/tcp.h>
-
+#include "filter/detection.h"
 
 static struct nf_hook_ops nfho;
 
