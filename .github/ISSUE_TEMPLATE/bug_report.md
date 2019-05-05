@@ -25,7 +25,7 @@ If applicable, add screenshots to help explain your problem.
 
 **Desktop (please complete the following information):**
  - OS: [e.g. Debian]
- - Kernel Version: [run shell command `unman -r`]
+ - Kernel Version: [run shell command `uname -r`]
  - Message: [run command `dmesg` to find]
 
 **Additional context**
