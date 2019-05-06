@@ -1,3 +1,0 @@
-[submodule "lib/src/libemu"]
-	path = lib/src/libemu
-	url = https://github.com/buffer/libemu.git
