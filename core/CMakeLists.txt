@@ -8,9 +8,6 @@ set(path /lib/modules/${v}/build/include/)
 message(STATUS ${path})
 include_directories(${path})
 
-add_subdirectory(filter)
-add_subdirectory(logging)
-add_subdirectory(messaging)
-
 add_definitions(-DCONFIG_NETFILTER)
-add_executable(TEST_HEADER test_module.c)
+add_definitions(-D__KERNEL__)
+add_executable(TEST_HEADER module.c constants.h)

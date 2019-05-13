@@ -1,1 +1,0 @@
-# Firewall logging implementation
