@@ -11,7 +11,9 @@
 #include <linux/fs.h>
 #include <linux/timer.h>
 #include <linux/timex.h>
+#include <linux/rtc.h>
 #include <linux/string.h>
+#include <linux/types.h>
 
 //========================Filter Declaration==START==Author: @wzs82868996==================
 bool check_tcp(struct iphdr *ip, struct tcphdr *tcp, unsigned char *data, int length);
@@ -36,9 +38,11 @@ struct {
     char *level_str;
 } logger_record;
 
-void init_writer();
-int log();
-void close_writer();
+char *log_str = NULL;
+
+void init_writer(void);
+void log(void);
+void close_writer(void);
 
 //========================Logger Declaration==END==========================================
 
@@ -148,17 +152,15 @@ bool check_udp(struct iphdr *ip, struct udphdr *udp, unsigned char *data, int le
 //========================Logger Implementation==START==Author: @Dracula1998===============
 
 struct file *fp;
-time_t tt;
-tm* t;
-char time_str_space[50];
-char log_space[400];
+//char time_str_space[50];
+//char log_space[400];
 
-void init_writer()
+void init_writer(void)
 {
     fp = filp_open("/var/log/NetFilter.log",O_RDWR | O_CREAT,0644);
     if (IS_ERR(fp)){
         printk("create file error/n");
-        return -1;
+	return;
     }
 }
 
@@ -171,22 +173,18 @@ void write_log(char *log_str)
 
     fs = get_fs();
     set_fs(KERNEL_DS);
-    pos = file_pos_read(file)
     vfs_write(fp, log_str, strlen(log_str)*8, &pos);
-    vfs_read(fp, buf1, sizeof(buf), &pos);
-    file_pos_write(file, pos);
-    printk("read: %s/n",buf1);
     set_fs(fs);
-    return 0;
 }
 
-void close_writer()
+void close_writer(void)
 {
     filp_close(fp,NULL);
 }
 
-char *get_current_time()
+void *get_current_time(void)
 {
+/*
     tt = time(NULL);
 	t = localtime(&tt);
 	char *log_time = time_str_space;
@@ -204,18 +202,24 @@ char *get_current_time()
 	log_time = strcat(log_time, t->tm_sec);
 
     return log_time;
-	/*
-	printf("\n%d-%02d-%02d %02d:%02d:%02d\n",
-		t->tm_year + 1900,
-		t->tm_mon + 1,
-		t->tm_mday,
-		t->tm_hour,
-		t->tm_min,
-		t->tm_sec);
-    */
+*/
+	struct timex txc;
+	struct rtc_time tm;
+	
+	do_gettimeofday(&(txc.time));
+	
+	txc.time.tv_sec -= sys_tz.tz_minuteswest*60;
+	rtc_time_to_tm(txc.time.tv_sec, &tm);	
+	sprintf(logger_record.time, "\n%d-%02d-%02d %02d:%02d:%02d\n",
+		tm.tm_year + 1900,
+		tm.tm_mon + 1,
+		tm.tm_mday,
+		tm.tm_hour,
+		tm.tm_min,
+		tm.tm_sec);
 }
 
-int log() {
+void log(void) {
     logger_record.time = get_current_time();
     printk(logger_record.source);
     printk(logger_record.message);
@@ -241,7 +245,9 @@ int log() {
         logger_record.level_str = "UNKNOWN";
         break;
     }
-    char *log_str = log_space;
+    //char *log_str = = log_space;
+    get_current_time();
+/*
     log_str = logger_record.time;
     log_str = strcat(log_str, " [");
     log_str = strcat(log_str, logger_record.level_str);
@@ -250,9 +256,9 @@ int log() {
     log_str = strcat(log_str, "] ");
     log_str = strcat(log_str, logger_record.message);
     log_str = strcat(log_str, "\n");
-
+*/
+    sprintf(log_str, "%s [%s][%s] %s\n", logger_record.time, logger_record.level_str, logger_record.source, logger_record.message);
     write_log(log_str);
-    return 0;
 }
 
 
