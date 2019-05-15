@@ -182,6 +182,7 @@ void close_writer(void) {
     filp_close(fp, NULL);
 }
 
+// where is var named time
 char *get_current_time(void) {
 /*
     tt = time(NULL);
