@@ -24,11 +24,6 @@ bool check_udp(struct iphdr *ip, struct udphdr *udp, unsigned char *data, int le
 
 
 //========================Logger Declaration==START==Author: @Dracula1998==================
-#define DEBUG -1
-#define OK 0
-#define LOW 1
-#define WARN 2
-#define FATAL 3
 /*
 struct {
     char *time;
