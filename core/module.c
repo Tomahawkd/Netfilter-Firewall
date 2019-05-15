@@ -156,7 +156,7 @@ struct file *fp;
 void init_writer(void) {
     fp = filp_open("/var/log/NetFilter.log", O_RDWR | O_CREAT, 0644);
     if (IS_ERR(fp)) {
-        printk("create file error/n");
+        printk(NAME"Create log file error\n");
         return;
     }
 }
@@ -165,7 +165,7 @@ void write_log(char *log_str) {
     mm_segment_t fs;
     loff_t pos;
 
-    printk("hello enter/n");
+    printk(NAME"Writing log\n");
 
     fs = get_fs();
     set_fs(KERNEL_DS);
@@ -201,9 +201,9 @@ void log_message(char *source, int level, char *message) {
     char log_str[1024];
     char *level_str = NULL;
 
-    printk("%s\n", source);
-    printk("%s\n", message);
-    printk("%d\n", level);
+    printk(NAME"Source %s\n", source);
+    printk(NAME"Message %s\n", message);
+    printk(NAME"Level %d\n", level);
 
     switch (level) {
         case LOGGER_DEBUG:
