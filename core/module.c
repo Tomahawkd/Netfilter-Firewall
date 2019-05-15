@@ -110,6 +110,8 @@ static int __init hook_init(void) {
     int ret = 0;
     struct net *n;
 
+    init_writer();
+
     nfho.hook = hook_funcion;
     nfho.pf = NFPROTO_IPV4;
     nfho.hooknum = NF_INET_PRE_ROUTING;
@@ -118,6 +120,10 @@ static int __init hook_init(void) {
 
     printk(NAME"nf_register_hook returnd %d\n", ret);
 
+    char message[128];
+    sprintf(message, "nf_register_hook returnd %d", ret);
+    log_message("Hook init", LOGGER_OK, message);
+
     return 0;
 }
 
@@ -125,6 +131,8 @@ static void __exit hook_exit(void) {
     struct net *n;
 
     for_each_net(n)nf_unregister_net_hook(n, &nfho);
+
+    close_writer();
 }
 
 module_init(hook_init);
