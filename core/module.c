@@ -29,7 +29,7 @@ bool check_udp(struct iphdr *ip, struct udphdr *udp, unsigned char *data, int le
 #define LOW 1
 #define WARN 2
 #define FATAL 3
-
+/*
 struct {
     char *time;
     char *source;
@@ -37,11 +37,11 @@ struct {
     int level;
     char *level_str;
 } logger_record;
-
+*/
 char *log_str = NULL;
 
 void init_writer(void);
-void log(void);
+void log(char *source, int level, char *message);
 void close_writer(void);
 
 //========================Logger Declaration==END==========================================
@@ -182,7 +182,7 @@ void close_writer(void)
     filp_close(fp,NULL);
 }
 
-void *get_current_time(void)
+char *get_current_time(void)
 {
 /*
     tt = time(NULL);
@@ -205,48 +205,52 @@ void *get_current_time(void)
 */
 	struct timex txc;
 	struct rtc_time tm;
-	
+
 	do_gettimeofday(&(txc.time));
-	
+
 	txc.time.tv_sec -= sys_tz.tz_minuteswest*60;
-	rtc_time_to_tm(txc.time.tv_sec, &tm);	
-	sprintf(logger_record.time, "\n%d-%02d-%02d %02d:%02d:%02d\n",
+	rtc_time_to_tm(txc.time.tv_sec, &tm);
+	sprintf(time, "\n%d-%02d-%02d %02d:%02d:%02d\n",
 		tm.tm_year + 1900,
 		tm.tm_mon + 1,
 		tm.tm_mday,
 		tm.tm_hour,
 		tm.tm_min,
 		tm.tm_sec);
+    return time;
 }
 
-void log(void) {
-    logger_record.time = get_current_time();
-    printk(logger_record.source);
-    printk(logger_record.message);
-    printk("%d", logger_record.level);
-    switch(logger_record.level)
+void log(char *source, int level,char *message) {
+    char *time = NULL;
+    char *level_str = NULL;
+
+    printk("%s\n", source);
+    printk("%s\n", message);
+    printk("%d\n", level);
+
+    switch(level)
     {
     case -1:
-        logger_record.level_str = "DEBUG";
+        level_str = "DEBUG";
         break;
     case 0:
-        logger_record.level_str = "OK";
+        level_str = "OK";
         break;
     case 1:
-        logger_record.level_str = "LOW";
+        level_str = "LOW";
         break;
     case 2:
-        logger_record.level_str = "WARN";
+        level_str = "WARN";
         break;
     case 3:
-        logger_record.level_str = "FATAL";
+        level_str = "FATAL";
         break;
     default:
-        logger_record.level_str = "UNKNOWN";
+        level_str = "UNKNOWN";
         break;
     }
     //char *log_str = = log_space;
-    get_current_time();
+    time = get_current_time();
 /*
     log_str = logger_record.time;
     log_str = strcat(log_str, " [");
@@ -257,7 +261,7 @@ void log(void) {
     log_str = strcat(log_str, logger_record.message);
     log_str = strcat(log_str, "\n");
 */
-    sprintf(log_str, "%s [%s][%s] %s\n", logger_record.time, logger_record.level_str, logger_record.source, logger_record.message);
+    sprintf(log_str, "%s [%s][%s] %s\n", time, level_str, source, message);
     write_log(log_str);
 }
 
@@ -267,7 +271,7 @@ int main(void) {
     logger_record.message = "message";
     logger_record.level = DEBUG;
     init_writer();
-    log();
+    log("source", -1, "message");
     close_writer();
     return 0;
 }
