@@ -169,9 +169,8 @@ void close_writer(void) {
     filp_close(fp, NULL);
 }
 
-char *get_current_time(void) {
+void get_current_time(char* time) {
 
-    char *time;
     struct timex txc;
     struct rtc_time tm;
 
@@ -190,7 +189,9 @@ char *get_current_time(void) {
 }
 
 void log_message(char *source, int level, char *message) {
-    char *time = NULL;
+
+    char time[32];
+    char log_str[1024];
     char *level_str = NULL;
 
     printk("%s\n", source);
@@ -218,9 +219,9 @@ void log_message(char *source, int level, char *message) {
             break;
     }
 
-    time = get_current_time();
+    get_current_time(time);
 
-    sprintf(log_str, "%s [%s][%s] %s\n", time, level_str, source, message);
+    sprintf(log_str, "%s [%s] %s %s\n", time, source, level_str, message);
     write_log(log_str);
 }
 
