@@ -24,6 +24,7 @@ bool check_udp(struct iphdr *ip, struct udphdr *udp, unsigned char *data, int le
 
 
 //========================Logger Declaration==START==Author: @Dracula1998==================
+
 /*
 struct {
     char *time;
@@ -225,19 +226,19 @@ void log_message(char *source, int level,char *message) {
 
     switch(level)
     {
-    case -1:
+    case LOGGER_DEBUG:
         level_str = "DEBUG";
         break;
-    case 0:
+    case LOGGER_OK:
         level_str = "OK";
         break;
-    case 1:
+    case LOGGER_LOW:
         level_str = "LOW";
         break;
-    case 2:
+    case LOGGER_WARN:
         level_str = "WARN";
         break;
-    case 3:
+    case LOGGER_FATAL:
         level_str = "FATAL";
         break;
     default:
