@@ -27,6 +27,14 @@ bool check_udp(struct iphdr *ip, struct udphdr *udp, unsigned char *data, int le
 
 void init_writer(void);
 
+/**
+ * Be aware that the message has max length. The concat message length should be less than
+ * 1024 bytes.
+ *
+ * @param source
+ * @param level
+ * @param message
+ */
 void log_message(char *source, int level, char *message);
 
 void close_writer(void);
