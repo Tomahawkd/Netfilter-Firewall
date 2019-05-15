@@ -37,7 +37,9 @@ struct {
 char *log_str = NULL;
 
 void init_writer(void);
+
 void log_message(char *source, int level, char *message);
+
 void close_writer(void);
 
 //========================Logger Declaration==END==========================================
@@ -63,11 +65,14 @@ unsigned int hook_funcion(void *priv, struct sk_buff *skb, const struct nf_hook_
     if (!ip) return NF_ACCEPT;
     unsigned int saddr = ip->saddr;
     unsigned int daddr = ip->daddr;
-    printk(NAME"IP[%u.%u.%u.%u]--->[%u.%u.%u.%u]", saddr&255u, saddr>>8u&255u, saddr>>16u&255u, saddr>>24u&255u, daddr&255u, daddr>>8u&255u, daddr>>16u&255u, daddr>>24u&255u);
+    printk(NAME"IP[%u.%u.%u.%u]--->[%u.%u.%u.%u]", saddr & 255u, saddr >> 8u & 255u, saddr >> 16u & 255u,
+           saddr >> 24u & 255u, daddr & 255u, daddr >> 8u & 255u, daddr >> 16u & 255u, daddr >> 24u & 255u);
 
     if (ip->protocol == IPPROTO_TCP) {
         struct tcphdr *tcp = tcp_hdr(skb);
-        printk(NAME"TCP[%u.%u.%u.%u:%hu]-->[%u.%u.%u.%u:%hu]", saddr&255u, saddr>>8u&255u, saddr>>16u&255u, saddr>>24u&255u, tcp->source, daddr&255u, daddr>>8u&255u, daddr>>16u&255u, daddr>>24u&255u, tcp->dest);
+        printk(NAME"TCP[%u.%u.%u.%u:%hu]-->[%u.%u.%u.%u:%hu]", saddr & 255u, saddr >> 8u & 255u, saddr >> 16u & 255u,
+               saddr >> 24u & 255u, tcp->source, daddr & 255u, daddr >> 8u & 255u, daddr >> 16u & 255u,
+               daddr >> 24u & 255u, tcp->dest);
 
         unsigned char *user_data = (unsigned char *) ((unsigned char *) tcp + (tcp->doff * 4));
         unsigned char *tail = skb_tail_pointer(skb);
@@ -83,7 +88,9 @@ unsigned int hook_funcion(void *priv, struct sk_buff *skb, const struct nf_hook_
 
     } else if (ip->protocol == IPPROTO_UDP) {
         struct udphdr *udp = udp_hdr(skb);
-        printk(NAME"UDP[%u.%u.%u.%u:%hu]-->[%u.%u.%u.%u:%hu]", saddr&255u, saddr>>8u&255u, saddr>>16u&255u, saddr>>24u&255u, udp->source, daddr&255u, daddr>>8u&255u, daddr>>16u&255u, daddr>>24u&255u, udp->dest);
+        printk(NAME"UDP[%u.%u.%u.%u:%hu]-->[%u.%u.%u.%u:%hu]", saddr & 255u, saddr >> 8u & 255u, saddr >> 16u & 255u,
+               saddr >> 24u & 255u, udp->source, daddr & 255u, daddr >> 8u & 255u, daddr >> 16u & 255u,
+               daddr >> 24u & 255u, udp->dest);
 
         unsigned char *user_data = (unsigned char *) ((unsigned char *) udp + 32);
         if (user_data) {
@@ -151,17 +158,15 @@ struct file *fp;
 //char time_str_space[50];
 //char log_space[400];
 
-void init_writer(void)
-{
-    fp = filp_open("/var/log/NetFilter.log",O_RDWR | O_CREAT,0644);
-    if (IS_ERR(fp)){
+void init_writer(void) {
+    fp = filp_open("/var/log/NetFilter.log", O_RDWR | O_CREAT, 0644);
+    if (IS_ERR(fp)) {
         printk("create file error/n");
-	return;
+        return;
     }
 }
 
-void write_log(char *log_str)
-{
+void write_log(char *log_str) {
     mm_segment_t fs;
     loff_t pos;
 
@@ -169,17 +174,16 @@ void write_log(char *log_str)
 
     fs = get_fs();
     set_fs(KERNEL_DS);
-    vfs_write(fp, log_str, strlen(log_str)*8, &pos);
+    vfs_write(fp, log_str, strlen(log_str) * 8, &pos);
     set_fs(fs);
 }
 
-void close_writer(void)
-{
-    filp_close(fp,NULL);
+void close_writer(void) {
+    filp_close(fp, NULL);
 }
 
-char *get_current_time(void)
-{
+// where is var named time
+char *get_current_time(void) {
 /*
     tt = time(NULL);
 	t = localtime(&tt);
@@ -199,24 +203,24 @@ char *get_current_time(void)
 
     return log_time;
 */
-	struct timex txc;
-	struct rtc_time tm;
+    struct timex txc;
+    struct rtc_time tm;
 
-	do_gettimeofday(&(txc.time));
+    do_gettimeofday(&(txc.time));
 
-	txc.time.tv_sec -= sys_tz.tz_minuteswest*60;
-	rtc_time_to_tm(txc.time.tv_sec, &tm);
-	sprintf(time, "\n%d-%02d-%02d %02d:%02d:%02d\n",
-		tm.tm_year + 1900,
-		tm.tm_mon + 1,
-		tm.tm_mday,
-		tm.tm_hour,
-		tm.tm_min,
-		tm.tm_sec);
+    txc.time.tv_sec -= sys_tz.tz_minuteswest * 60;
+    rtc_time_to_tm(txc.time.tv_sec, &tm);
+    sprintf(time, "\n%d-%02d-%02d %02d:%02d:%02d\n",
+            tm.tm_year + 1900,
+            tm.tm_mon + 1,
+            tm.tm_mday,
+            tm.tm_hour,
+            tm.tm_min,
+            tm.tm_sec);
     return time;
 }
 
-void log_message(char *source, int level,char *message) {
+void log_message(char *source, int level, char *message) {
     char *time = NULL;
     char *level_str = NULL;
 
@@ -224,26 +228,25 @@ void log_message(char *source, int level,char *message) {
     printk("%s\n", message);
     printk("%d\n", level);
 
-    switch(level)
-    {
-    case LOGGER_DEBUG:
-        level_str = "DEBUG";
-        break;
-    case LOGGER_OK:
-        level_str = "OK";
-        break;
-    case LOGGER_LOW:
-        level_str = "LOW";
-        break;
-    case LOGGER_WARN:
-        level_str = "WARN";
-        break;
-    case LOGGER_FATAL:
-        level_str = "FATAL";
-        break;
-    default:
-        level_str = "UNKNOWN";
-        break;
+    switch (level) {
+        case LOGGER_DEBUG:
+            level_str = "DEBUG";
+            break;
+        case LOGGER_OK:
+            level_str = "OK";
+            break;
+        case LOGGER_LOW:
+            level_str = "LOW";
+            break;
+        case LOGGER_WARN:
+            level_str = "WARN";
+            break;
+        case LOGGER_FATAL:
+            level_str = "FATAL";
+            break;
+        default:
+            level_str = "UNKNOWN";
+            break;
     }
     //char *log_str = = log_space;
     time = get_current_time();
