@@ -36,7 +36,7 @@ struct {
 char *log_str = NULL;
 
 void init_writer(void);
-void log(char *source, int level, char *message);
+void log_message(char *source, int level, char *message);
 void close_writer(void);
 
 //========================Logger Declaration==END==========================================
@@ -215,7 +215,7 @@ char *get_current_time(void)
     return time;
 }
 
-void log(char *source, int level,char *message) {
+void log_message(char *source, int level,char *message) {
     char *time = NULL;
     char *level_str = NULL;
 
