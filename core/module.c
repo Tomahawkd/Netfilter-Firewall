@@ -261,18 +261,6 @@ void log_message(char *source, int level,char *message) {
     write_log(log_str);
 }
 
-
-int main(void) {
-    logger_record.source = "source";
-    logger_record.message = "message";
-    logger_record.level = DEBUG;
-    init_writer();
-    log("source", -1, "message");
-    close_writer();
-    return 0;
-}
-
-
 //========================Logger Implementation==END=======================================
 
 
