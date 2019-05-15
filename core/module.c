@@ -25,8 +25,6 @@ bool check_udp(struct iphdr *ip, struct udphdr *udp, unsigned char *data, int le
 
 //========================Logger Declaration==START==Author: @Dracula1998==================
 
-char *log_str = NULL;
-
 void init_writer(void);
 
 void log_message(char *source, int level, char *message);
