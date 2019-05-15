@@ -185,7 +185,6 @@ void get_current_time(char* time) {
             tm.tm_hour,
             tm.tm_min,
             tm.tm_sec);
-    return time;
 }
 
 void log_message(char *source, int level, char *message) {
