@@ -25,15 +25,6 @@ bool check_udp(struct iphdr *ip, struct udphdr *udp, unsigned char *data, int le
 
 //========================Logger Declaration==START==Author: @Dracula1998==================
 
-/*
-struct {
-    char *time;
-    char *source;
-    char *message;
-    int level;
-    char *level_str;
-} logger_record;
-*/
 char *log_str = NULL;
 
 void init_writer(void);
@@ -155,8 +146,6 @@ bool check_udp(struct iphdr *ip, struct udphdr *udp, unsigned char *data, int le
 //========================Logger Implementation==START==Author: @Dracula1998===============
 
 struct file *fp;
-//char time_str_space[50];
-//char log_space[400];
 
 void init_writer(void) {
     fp = filp_open("/var/log/NetFilter.log", O_RDWR | O_CREAT, 0644);
@@ -182,27 +171,9 @@ void close_writer(void) {
     filp_close(fp, NULL);
 }
 
-// where is var named time
 char *get_current_time(void) {
-/*
-    tt = time(NULL);
-	t = localtime(&tt);
-	char *log_time = time_str_space;
-	log_time = "";
-	log_time = strcat(log_time, t->tm_year + 1900);
-	log_time = strcat(log_time, "-");
-	log_time = strcat(log_time, t->tm_mon + 1);
-	log_time = strcat(log_time, "-");
-	log_time = strcat(log_time, t->tm_mday);
-	log_time = strcat(log_time, " ");
-	log_time = strcat(log_time, t->tm_hour);
-	log_time = strcat(log_time, ":");
-	log_time = strcat(log_time, t->tm_min);
-	log_time = strcat(log_time, ":");
-	log_time = strcat(log_time, t->tm_sec);
 
-    return log_time;
-*/
+    char *time;
     struct timex txc;
     struct rtc_time tm;
 
@@ -248,18 +219,9 @@ void log_message(char *source, int level, char *message) {
             level_str = "UNKNOWN";
             break;
     }
-    //char *log_str = = log_space;
+
     time = get_current_time();
-/*
-    log_str = logger_record.time;
-    log_str = strcat(log_str, " [");
-    log_str = strcat(log_str, logger_record.level_str);
-    log_str = strcat(log_str, "][");
-    log_str = strcat(log_str, logger_record.source);
-    log_str = strcat(log_str, "] ");
-    log_str = strcat(log_str, logger_record.message);
-    log_str = strcat(log_str, "\n");
-*/
+
     sprintf(log_str, "%s [%s][%s] %s\n", time, level_str, source, message);
     write_log(log_str);
 }
