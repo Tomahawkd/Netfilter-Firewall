@@ -149,8 +149,8 @@ static void __exit hook_exit(void) {
     close_writer();
 }
 
-module_init(hook_init);
-module_exit(hook_exit);
+module_init(hook_init)
+module_exit(hook_exit)
 
 MODULE_LICENSE("Dual MIT/GPL");
 MODULE_AUTHOR("Tomahawkd");
