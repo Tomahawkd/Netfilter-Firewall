@@ -180,7 +180,7 @@ void write_log(char *log_str, int length) {
 
     if (log_str == NULL) return;
 
-    printk(NAME"Writing log\n");
+    printk(NAME"%s\n", log_str);
 
     mm_segment_t old_fs = get_fs();
     set_fs(get_ds());
@@ -220,10 +220,6 @@ void log_message(char *source, int level, char *message) {
     char time[32];
     char log_str[512];
     char *level_str = NULL;
-
-    printk(NAME"Source %s\n", source);
-    printk(NAME"Message %s\n", message);
-    printk(NAME"Level %d\n", level);
 
     switch (level) {
         case LOGGER_DEBUG:
