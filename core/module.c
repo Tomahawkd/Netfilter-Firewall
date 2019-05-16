@@ -124,8 +124,6 @@ static int __init hook_init(void) {
     nfho.priority = NF_IP_PRI_MANGLE;
     for_each_net(n)ret += nf_register_net_hook(n, &nfho);
 
-    printk(NAME"nf_register_hook returnd %d\n", ret);
-
     char message[128];
     sprintf(message, "nf_register_hook returnd %d", ret);
     log_message("Hook init", LOGGER_OK, message);
