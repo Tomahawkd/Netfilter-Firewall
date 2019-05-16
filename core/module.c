@@ -169,6 +169,7 @@ void init_writer(void) {
     file = filp_open("/var/log/NetFilter.log", O_RDWR | O_CREAT | O_APPEND, 0644);
     if (IS_ERR(file)) {
         printk(NAME"Create log file error\n");
+        file = NULL;
         return;
     }
 }
