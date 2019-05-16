@@ -29,6 +29,8 @@ FILTER_BOOL check_udp(struct iphdr *ip, struct udphdr *udp, unsigned char *data,
 
 //========================Logger Declaration==START==Author: @Dracula1998==================
 
+#define LOG_LEVEL LOGGER_OK
+
 void init_writer(void);
 
 /**
@@ -212,6 +214,8 @@ void log_message(char *source, int level, char *message) {
 
     if (file == NULL) return;
     if (message == NULL || source == NULL) return;
+
+    if (level < LOG_LEVEL) return;
 
     char time[32];
     char log_str[512];
