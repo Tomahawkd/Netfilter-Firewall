@@ -174,7 +174,7 @@ void init_writer(void) {
     }
 }
 
-void write_log(char *log_str) {
+void write_log(char *log_str, int length) {
 
     if (log_str == NULL) return;
 
@@ -182,7 +182,7 @@ void write_log(char *log_str) {
 
     mm_segment_t old_fs = get_fs();
     set_fs(get_ds());
-    vfs_write(file, log_str, strlen(log_str) * 8, &file->f_pos);
+    vfs_write(file, log_str, length, &file->f_pos);
     set_fs(old_fs);
 }
 
@@ -244,7 +244,7 @@ void log_message(char *source, int level, char *message) {
     get_current_time(time);
 
     sprintf(log_str, "%s [%s] %s %s\n", time, source, level_str, message);
-    write_log(log_str);
+    write_log(log_str, strlen(log_str));
 }
 
 //========================Logger Implementation==END=======================================
