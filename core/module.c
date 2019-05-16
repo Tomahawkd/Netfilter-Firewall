@@ -64,18 +64,24 @@ unsigned int hook_funcion(void *priv, struct sk_buff *skb, const struct nf_hook_
 
     if (!skb) return NF_ACCEPT;
 
+    char info[256];
+
     struct iphdr *ip = ip_hdr(skb);
     if (!ip) return NF_ACCEPT;
     unsigned int saddr = ip->saddr;
     unsigned int daddr = ip->daddr;
-    printk(NAME"IP[%u.%u.%u.%u]--->[%u.%u.%u.%u]", saddr & 255u, saddr >> 8u & 255u, saddr >> 16u & 255u,
+
+    sprintf(info, "IP[%u.%u.%u.%u]--->[%u.%u.%u.%u]", saddr & 255u, saddr >> 8u & 255u, saddr >> 16u & 255u,
            saddr >> 24u & 255u, daddr & 255u, daddr >> 8u & 255u, daddr >> 16u & 255u, daddr >> 24u & 255u);
+    log_message("Hook Function IP", LOGGER_OK, info);
 
     if (ip->protocol == IPPROTO_TCP) {
         struct tcphdr *tcp = tcp_hdr(skb);
-        printk(NAME"TCP[%u.%u.%u.%u:%hu]-->[%u.%u.%u.%u:%hu]", saddr & 255u, saddr >> 8u & 255u, saddr >> 16u & 255u,
-               saddr >> 24u & 255u, tcp->source, daddr & 255u, daddr >> 8u & 255u, daddr >> 16u & 255u,
-               daddr >> 24u & 255u, tcp->dest);
+
+        sprintf(info, "TCP[%u.%u.%u.%u:%hu]-->[%u.%u.%u.%u:%hu]", saddr & 255u, saddr >> 8u & 255u,
+                saddr >> 16u & 255u, saddr >> 24u & 255u, tcp->source, daddr & 255u, daddr >> 8u & 255u,
+               daddr >> 16u & 255u, daddr >> 24u & 255u, tcp->dest);
+        log_message("Hook Function TCP", LOGGER_OK, info);
 
         unsigned char *user_data = (unsigned char *) ((unsigned char *) tcp + (tcp->doff * 4));
         unsigned char *tail = skb_tail_pointer(skb);
@@ -91,9 +97,11 @@ unsigned int hook_funcion(void *priv, struct sk_buff *skb, const struct nf_hook_
 
     } else if (ip->protocol == IPPROTO_UDP) {
         struct udphdr *udp = udp_hdr(skb);
-        printk(NAME"UDP[%u.%u.%u.%u:%hu]-->[%u.%u.%u.%u:%hu]", saddr & 255u, saddr >> 8u & 255u, saddr >> 16u & 255u,
-               saddr >> 24u & 255u, udp->source, daddr & 255u, daddr >> 8u & 255u, daddr >> 16u & 255u,
-               daddr >> 24u & 255u, udp->dest);
+
+        sprintf(info, "UDP[%u.%u.%u.%u:%hu]-->[%u.%u.%u.%u:%hu]", saddr & 255u, saddr >> 8u & 255u,
+                saddr >> 16u & 255u, saddr >> 24u & 255u, udp->source, daddr & 255u, daddr >> 8u & 255u,
+               daddr >> 16u & 255u, daddr >> 24u & 255u, udp->dest);
+        log_message("Hook Function UDP", LOGGER_OK, info);
 
         unsigned char *user_data = (unsigned char *) ((unsigned char *) udp + 32);
         if (user_data) {
@@ -133,6 +141,8 @@ static int __init hook_init(void) {
 
 static void __exit hook_exit(void) {
     struct net *n;
+
+    log_message("Hook exit", LOGGER_OK, "Hook deinit");
 
     for_each_net(n)nf_unregister_net_hook(n, &nfho);
 
