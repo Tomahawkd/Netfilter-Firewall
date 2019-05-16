@@ -163,11 +163,11 @@ FILTER_BOOL check_udp(struct iphdr *ip, struct udphdr *udp, unsigned char *data,
 
 //========================Logger Implementation==START==Author: @Dracula1998===============
 
-struct file *fp;
+struct file *file;
 
 void init_writer(void) {
-    fp = filp_open("/var/log/NetFilter.log", O_RDWR | O_CREAT, 0644);
-    if (IS_ERR(fp)) {
+    file = filp_open("/var/log/NetFilter.log", O_RDWR | O_CREAT | O_APPEND, 0644);
+    if (IS_ERR(file)) {
         printk(NAME"Create log file error\n");
         return;
     }
@@ -179,14 +179,14 @@ void write_log(char *log_str) {
 
     printk(NAME"Writing log\n");
 
-    fs = get_fs();
-    set_fs(KERNEL_DS);
-    vfs_write(fp, log_str, strlen(log_str) * 8, &pos);
-    set_fs(fs);
+    mm_segment_t old_fs = get_fs();
+    set_fs(get_ds());
+    vfs_write(file, log_str, strlen(log_str) * 8, &file->f_pos);
+    set_fs(old_fs);
 }
 
 void close_writer(void) {
-    filp_close(fp, NULL);
+    filp_close(file, NULL);
 }
 
 void get_current_time(char* time) {
