@@ -16,9 +16,9 @@
 #include <linux/types.h>
 
 //========================Filter Declaration==START==Author: @wzs82868996==================
-bool check_tcp(struct iphdr *ip, struct tcphdr *tcp, unsigned char *data, int length);
+FILTER_BOOL check_tcp(struct iphdr *ip, struct tcphdr *tcp, unsigned char *data, int length);
 
-bool check_udp(struct iphdr *ip, struct udphdr *udp, unsigned char *data, int length);
+FILTER_BOOL check_udp(struct iphdr *ip, struct udphdr *udp, unsigned char *data, int length);
 //=========================Filter Declaration==END=========================================
 
 
@@ -145,12 +145,12 @@ MODULE_AUTHOR("Tomahawkd");
 
 
 //========================Filter Implementation==START==Author: @wzs82868996===============
-bool check_tcp(struct iphdr *ip, struct tcphdr *tcp, unsigned char *data, int length) {
-    return true;
+FILTER_BOOL check_tcp(struct iphdr *ip, struct tcphdr *tcp, unsigned char *data, int length) {
+    return FILTER_TRUE;
 }
 
-bool check_udp(struct iphdr *ip, struct udphdr *udp, unsigned char *data, int length) {
-    return true;
+FILTER_BOOL check_udp(struct iphdr *ip, struct udphdr *udp, unsigned char *data, int length) {
+    return FILTER_TRUE;
 }
 //========================Filter Implementation==END==Author: @wzs82868996=================
 

@@ -5,9 +5,9 @@
 #ifndef FIREWALL_CONSTANTS_H
 #define FIREWALL_CONSTANTS_H
 
-#define bool int
-#define true 1
-#define false 0
+#define FILTER_BOOL int
+#define FILTER_TRUE 1
+#define FILTER_FALSE 0
 
 #define NAME "[Netfilter Firewall] "
 
