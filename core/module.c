@@ -174,8 +174,8 @@ void init_writer(void) {
 }
 
 void write_log(char *log_str) {
-    mm_segment_t fs;
-    loff_t pos;
+
+    if (log_str == NULL) return;
 
     printk(NAME"Writing log\n");
 
@@ -208,6 +208,8 @@ void get_current_time(char* time) {
 }
 
 void log_message(char *source, int level, char *message) {
+
+    if (file == NULL) return;
 
     char time[32];
     char log_str[1024];
