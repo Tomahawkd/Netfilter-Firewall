@@ -211,6 +211,7 @@ void get_current_time(char* time) {
 void log_message(char *source, int level, char *message) {
 
     if (file == NULL) return;
+    if (message == NULL || source == NULL) return;
 
     char time[32];
     char log_str[512];
