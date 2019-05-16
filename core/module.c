@@ -33,7 +33,7 @@ void init_writer(void);
 
 /**
  * Be aware that the message has max length. The concat message length should be less than
- * 1024 bytes.
+ * 512 bytes.
  *
  * @param source
  * @param level
@@ -212,7 +212,7 @@ void log_message(char *source, int level, char *message) {
     if (file == NULL) return;
 
     char time[32];
-    char log_str[1024];
+    char log_str[512];
     char *level_str = NULL;
 
     printk(NAME"Source %s\n", source);
