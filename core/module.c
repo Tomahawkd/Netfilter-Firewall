@@ -210,7 +210,7 @@ void get_current_time(char* time) {
     txc.time.tv_sec -= sys_tz.tz_minuteswest * 60;
     rtc_time_to_tm(txc.time.tv_sec, &tm);
     sprintf(time, "%d-%02d-%02d %02d:%02d:%02d",
-            tm.tm_year + 1900, /* this value should be 1970? */
+            tm.tm_year + 1900,
             tm.tm_mon + 1,
             tm.tm_mday,
             tm.tm_hour,
