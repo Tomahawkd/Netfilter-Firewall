@@ -1,3 +1,5 @@
+#include "constants.h"
+
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/netfilter.h>
@@ -6,7 +8,6 @@
 #include <linux/tcp.h>
 #include <linux/udp.h>
 #include <linux/skbuff.h>
-#include "constants.h"
 #include <linux/init.h>
 #include <linux/fs.h>
 #include <linux/timer.h>
@@ -14,6 +15,9 @@
 #include <linux/rtc.h>
 #include <linux/string.h>
 #include <linux/types.h>
+#include <linux/unistd.h>
+#include <asm/uaccess.h>
+#include <asm/processor.h>
 
 //========================Filter Declaration==START==Author: @wzs82868996==================
 FILTER_BOOL check_tcp(struct iphdr *ip, struct tcphdr *tcp, unsigned char *data, int length);
