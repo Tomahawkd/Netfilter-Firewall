@@ -3,12 +3,12 @@ define MAKEFILE_CORE
 yes
 endef
 
-NAME = module
+PWD  := $(shell pwd)
+NAME = firewallmodule
 
 obj-m += $(NAME).o
-$(NAME)-objs := test_module.o
+$(NAME)-objs := module.o
 
-PWD  := $(shell pwd)
 MOD_NAME := $(NAME).ko
 
 all:
