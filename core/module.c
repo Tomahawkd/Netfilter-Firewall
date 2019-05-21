@@ -186,11 +186,43 @@ void init_writer(void) {
     }
 }
 
-void write_log(char *log_str, int length) {
+void print_console(int level, char *log_str) {
 
     if (log_str == NULL) return;
 
-    printk(NAME"%s", log_str);
+    char *console_color = NULL;
+
+    switch (level) {
+        case LOGGER_DEBUG:
+            console_color = COLOR_PURPLE;
+            break;
+        case LOGGER_INFO:
+            console_color = COLOR_BLACK;
+            break;
+        case LOGGER_OK:
+            console_color = COLOR_BLUE;
+            break;
+        case LOGGER_LOW:
+            console_color = COLOR_CYAN;
+            break;
+        case LOGGER_WARN:
+            console_color = COLOR_YELLOW;
+            break;
+        case LOGGER_FATAL:
+            console_color = COLOR_RED;
+            break;
+        default:
+            console_color = COLOR_WHITE;
+            break;
+    }
+
+    printk("%s"NAME"%s\b"COLOR_RESET, console_color, log_str);
+
+}
+
+void write_log(char *log_str, int length) {
+
+    if (log_str == NULL) return;
 
     mm_segment_t old_fs = get_fs();
     set_fs(get_ds());
@@ -234,6 +266,9 @@ void log_message(char *source, int level, char *message, int message_len) {
         case LOGGER_DEBUG:
             level_str = "DEBUG";
             break;
+        case LOGGER_INFO:
+            level_str = "INFO";
+            break;
         case LOGGER_OK:
             level_str = "OK";
             break;
@@ -255,7 +290,9 @@ void log_message(char *source, int level, char *message, int message_len) {
 
     char log_str[32 + 2 + strlen(source) + 2 + strlen(level_str) + 1 + message_len + 2];
 
-    sprintf(log_str, "%s [%s] %s %s\n", time, source, level_str, message);
+    sprintf(log_str, "%s [%s] %s %s", time, source, level_str, message);
+    print_console(level, log_str);
+    strncat(log_str, "\n", 1);
     write_log(log_str, strlen(log_str));
 }
 
