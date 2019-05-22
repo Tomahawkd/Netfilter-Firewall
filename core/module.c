@@ -214,7 +214,7 @@ void print_console(int level, char *log_str) {
             break;
     }
 
-    printk("%s"NAME"%s\b"COLOR_RESET, console_color, log_str);
+    printk("%s"NAME"%s"COLOR_RESET, console_color, log_str);
 
 }
 
