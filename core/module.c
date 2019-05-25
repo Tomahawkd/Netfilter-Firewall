@@ -34,15 +34,14 @@ FILTER_BOOL check_udp(struct iphdr *ip, struct udphdr *udp, unsigned char *data,
 void init_writer(void);
 
 /**
- * Be aware that the message has max length. The concat message length should be less than
- * 512 bytes.
+ * Be aware that the message has max length. The message length should be less than
+ * 512 bytes and the source length should be less than 64.
  *
  * @param source
  * @param level
  * @param message
- * @param message_len
  */
-void log_message(char *source, int level, char *message, int message_len);
+void log_message(char *source, int level, char *message);
 
 void close_writer(void);
 
@@ -74,7 +73,7 @@ unsigned int hook_funcion(void *priv, struct sk_buff *skb, const struct nf_hook_
 
     sprintf(info, "IP[%u.%u.%u.%u]--->[%u.%u.%u.%u]", saddr & 255u, saddr >> 8u & 255u, saddr >> 16u & 255u,
            saddr >> 24u & 255u, daddr & 255u, daddr >> 8u & 255u, daddr >> 16u & 255u, daddr >> 24u & 255u);
-    log_message("Hook Function IP", LOGGER_OK, info, strlen(info));
+    log_message("Hook Function IP", LOGGER_OK, info);
 
     if (ip->protocol == IPPROTO_TCP) {
         struct tcphdr *tcp = tcp_hdr(skb);
@@ -82,7 +81,7 @@ unsigned int hook_funcion(void *priv, struct sk_buff *skb, const struct nf_hook_
         sprintf(info, "TCP[%u.%u.%u.%u:%hu]-->[%u.%u.%u.%u:%hu]", saddr & 255u, saddr >> 8u & 255u,
                 saddr >> 16u & 255u, saddr >> 24u & 255u, tcp->source, daddr & 255u, daddr >> 8u & 255u,
                daddr >> 16u & 255u, daddr >> 24u & 255u, tcp->dest);
-        log_message("Hook Function TCP", LOGGER_OK, info, strlen(info));
+        log_message("Hook Function TCP", LOGGER_OK, info);
 
         unsigned char *user_data = (unsigned char *) ((unsigned char *) tcp + (tcp->doff * 4));
         unsigned char *tail = skb_tail_pointer(skb);
@@ -102,7 +101,7 @@ unsigned int hook_funcion(void *priv, struct sk_buff *skb, const struct nf_hook_
         sprintf(info, "UDP[%u.%u.%u.%u:%hu]-->[%u.%u.%u.%u:%hu]", saddr & 255u, saddr >> 8u & 255u,
                 saddr >> 16u & 255u, saddr >> 24u & 255u, udp->source, daddr & 255u, daddr >> 8u & 255u,
                daddr >> 16u & 255u, daddr >> 24u & 255u, udp->dest);
-        log_message("Hook Function UDP", LOGGER_OK, info, strlen(info));
+        log_message("Hook Function UDP", LOGGER_OK, info);
 
         unsigned char *user_data = (unsigned char *) ((unsigned char *) udp + 32);
         if (user_data) {
@@ -135,7 +134,7 @@ static int __init hook_init(void) {
 
     char message[128];
     sprintf(message, "nf_register_hook returnd %d", ret);
-    log_message("Hook init", LOGGER_OK, message, strlen(message));
+    log_message("Hook init", LOGGER_OK, message);
 
     return 0;
 }
@@ -144,7 +143,7 @@ static void __exit hook_exit(void) {
     struct net *n;
 
     char *message = "Hook deinit";
-    log_message("Hook exit", LOGGER_OK, message, strlen(message));
+    log_message("Hook exit", LOGGER_OK, message);
 
     for_each_net(n)nf_unregister_net_hook(n, &nfho);
 
@@ -252,10 +251,23 @@ void get_current_time(char* time) {
             tm.tm_sec);
 }
 
-void log_message(char *source, int level, char *message, int message_len) {
+void log_message(char *source, int level, char *message) {
 
     if (file == NULL) return;
     if (message == NULL || source == NULL) return;
+
+    int message_len = strnlen(message, 512);
+    int source_len = strnlen(source, 64);
+
+    // length too long
+    if (message_len >= 512) {
+        print_console(LOGGER_WARN, NAME"Message length exceeded 512");
+        return;
+    }
+    if (source_len >= 64) {
+        print_console(LOGGER_WARN, NAME"Source length exceeded 64");
+        return;
+    }
 
     if (level < LOG_LEVEL) return;
 
@@ -288,7 +300,7 @@ void log_message(char *source, int level, char *message, int message_len) {
 
     get_current_time(time);
 
-    char log_str[32 + 2 + strlen(source) + 2 + strlen(level_str) + 1 + message_len + 2];
+    char log_str[32 + 2 + source_len + 2 + strlen(level_str) + 1 + message_len + 2];
 
     sprintf(log_str, "%s [%s] %s %s", time, source, level_str, message);
     print_console(level, log_str);
