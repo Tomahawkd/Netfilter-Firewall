@@ -34,8 +34,8 @@ FILTER_BOOL check_udp(struct iphdr *ip, struct udphdr *udp, unsigned char *data,
 void init_writer(void);
 
 /**
- * Be aware that the message has max length. The concat message length should be less than
- * 512 bytes.
+ * Be aware that the message has max length. The message length should be less than
+ * 512 bytes and the source length should be less than 64.
  *
  * @param source
  * @param level
@@ -255,10 +255,22 @@ void log_message(char *source, int level, char *message) {
     if (file == NULL) return;
     if (message == NULL || source == NULL) return;
 
+    int message_len = strnlen(message, 512);
+    int source_len = strnlen(source, 64);
+
+    // length too long
+    if (message_len >= 512) {
+        print_console(LOGGER_WARN, NAME"Message length exceeded 512");
+        return;
+    }
+    if (source_len >= 64) {
+        print_console(LOGGER_WARN, NAME"Source length exceeded 64");
+        return;
+    }
+
     if (level < LOG_LEVEL) return;
 
     char time[32];
-    char log_str[512];
     char *level_str = NULL;
 
     switch (level) {
@@ -286,6 +298,8 @@ void log_message(char *source, int level, char *message) {
     }
 
     get_current_time(time);
+
+    char log_str[32 + 2 + source_len + 2 + strlen(level_str) + 1 + message_len + 2];
 
     sprintf(log_str, "%s [%s] %s %s", time, source, level_str, message);
     print_console(level, log_str);
