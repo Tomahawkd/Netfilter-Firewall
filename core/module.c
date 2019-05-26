@@ -34,8 +34,8 @@ FILTER_BOOL check_udp(struct iphdr *ip, struct udphdr *udp, unsigned char *data,
 void init_writer(void);
 
 /**
- * Be aware that the message has max length. The concat message length should be less than
- * 512 bytes.
+ * Be aware that the message has max length. The message length should be less than
+ * 512 bytes and the source length should be less than 64.
  *
  * @param source
  * @param level
@@ -56,6 +56,163 @@ void close_writer(void);
 //========================Messager Declaration==END========================================
 
 
+//========================Messager Implementation==START==Author: @Vshows==================
+
+
+//========================Messager Implementation==END=====================================
+
+
+//========================Filter Implementation==START==Author: @wzs82868996===============
+FILTER_BOOL check_tcp(struct iphdr *ip, struct tcphdr *tcp, unsigned char *data, int length) {
+    return FILTER_TRUE;
+}
+
+FILTER_BOOL check_udp(struct iphdr *ip, struct udphdr *udp, unsigned char *data, int length) {
+    return FILTER_TRUE;
+}
+//========================Filter Implementation==END==Author: @wzs82868996=================
+
+
+
+
+//========================Logger Implementation==START==Author: @Dracula1998===============
+
+struct file *file;
+
+void init_writer(void) {
+    file = filp_open("/var/log/NetFilter.log", O_RDWR | O_CREAT | O_APPEND, 0644);
+    if (IS_ERR(file)) {
+        printk(NAME"Create log file error\n");
+        file = NULL;
+        return;
+    }
+}
+
+void print_console(int level, char *log_str) {
+
+    if (log_str == NULL) return;
+
+    char *console_color = NULL;
+
+    switch (level) {
+        case LOGGER_DEBUG:
+            console_color = COLOR_PURPLE;
+            break;
+        case LOGGER_INFO:
+            console_color = COLOR_BLACK;
+            break;
+        case LOGGER_OK:
+            console_color = COLOR_BLUE;
+            break;
+        case LOGGER_LOW:
+            console_color = COLOR_CYAN;
+            break;
+        case LOGGER_WARN:
+            console_color = COLOR_YELLOW;
+            break;
+        case LOGGER_FATAL:
+            console_color = COLOR_RED;
+            break;
+        default:
+            console_color = COLOR_WHITE;
+            break;
+    }
+
+    printk("%s"NAME"%s"COLOR_RESET, console_color, log_str);
+
+}
+
+void write_log(char *log_str, int length) {
+
+    if (log_str == NULL) return;
+
+    mm_segment_t old_fs = get_fs();
+    set_fs(get_ds());
+    vfs_write(file, log_str, length, &file->f_pos);
+    set_fs(old_fs);
+}
+
+void close_writer(void) {
+    filp_close(file, NULL);
+}
+
+void get_current_time(char* time) {
+
+    struct timex txc;
+    struct rtc_time tm;
+
+    do_gettimeofday(&(txc.time));
+
+    txc.time.tv_sec -= sys_tz.tz_minuteswest * 60;
+    rtc_time_to_tm(txc.time.tv_sec, &tm);
+    sprintf(time, "%d-%02d-%02d %02d:%02d:%02d",
+            tm.tm_year + 1900,
+            tm.tm_mon + 1,
+            tm.tm_mday,
+            tm.tm_hour,
+            tm.tm_min,
+            tm.tm_sec);
+}
+
+void log_message(char *source, int level, char *message) {
+
+    if (file == NULL) return;
+    if (message == NULL || source == NULL) return;
+
+    int message_len = strnlen(message, 512);
+    int source_len = strnlen(source, 64);
+
+    // length too long
+    if (message_len >= 512) {
+        print_console(LOGGER_WARN, NAME"Message length exceeded 512");
+        return;
+    }
+    if (source_len >= 64) {
+        print_console(LOGGER_WARN, NAME"Source length exceeded 64");
+        return;
+    }
+
+    if (level < LOG_LEVEL) return;
+
+    char time[32];
+    char *level_str = NULL;
+
+    switch (level) {
+        case LOGGER_DEBUG:
+            level_str = "DEBUG";
+            break;
+        case LOGGER_INFO:
+            level_str = "INFO";
+            break;
+        case LOGGER_OK:
+            level_str = "OK";
+            break;
+        case LOGGER_LOW:
+            level_str = "LOW";
+            break;
+        case LOGGER_WARN:
+            level_str = "WARN";
+            break;
+        case LOGGER_FATAL:
+            level_str = "FATAL";
+            break;
+        default:
+            level_str = "UNKNOWN";
+            break;
+    }
+
+    get_current_time(time);
+
+    char log_str[32 + 2 + source_len + 2 + strlen(level_str) + 1 + message_len + 2];
+
+    sprintf(log_str, "%s [%s] %s %s", time, source, level_str, message);
+    print_console(level, log_str);
+    strncat(log_str, "\n", 1);
+    write_log(log_str, strlen(log_str));
+}
+
+//========================Logger Implementation==END=======================================
+
 
 //========================Kernel Module Implementation==START==Author: @Tomahawkd==========
 static struct nf_hook_ops nfho;
@@ -72,7 +229,7 @@ unsigned int hook_funcion(void *priv, struct sk_buff *skb, const struct nf_hook_
     unsigned int daddr = ip->daddr;
 
     sprintf(info, "IP[%u.%u.%u.%u]--->[%u.%u.%u.%u]", saddr & 255u, saddr >> 8u & 255u, saddr >> 16u & 255u,
-           saddr >> 24u & 255u, daddr & 255u, daddr >> 8u & 255u, daddr >> 16u & 255u, daddr >> 24u & 255u);
+            saddr >> 24u & 255u, daddr & 255u, daddr >> 8u & 255u, daddr >> 16u & 255u, daddr >> 24u & 255u);
     log_message("Hook Function IP", LOGGER_OK, info);
 
     if (ip->protocol == IPPROTO_TCP) {
@@ -80,7 +237,7 @@ unsigned int hook_funcion(void *priv, struct sk_buff *skb, const struct nf_hook_
 
         sprintf(info, "TCP[%u.%u.%u.%u:%hu]-->[%u.%u.%u.%u:%hu]", saddr & 255u, saddr >> 8u & 255u,
                 saddr >> 16u & 255u, saddr >> 24u & 255u, tcp->source, daddr & 255u, daddr >> 8u & 255u,
-               daddr >> 16u & 255u, daddr >> 24u & 255u, tcp->dest);
+                daddr >> 16u & 255u, daddr >> 24u & 255u, tcp->dest);
         log_message("Hook Function TCP", LOGGER_OK, info);
 
         unsigned char *user_data = (unsigned char *) ((unsigned char *) tcp + (tcp->doff * 4));
@@ -100,7 +257,7 @@ unsigned int hook_funcion(void *priv, struct sk_buff *skb, const struct nf_hook_
 
         sprintf(info, "UDP[%u.%u.%u.%u:%hu]-->[%u.%u.%u.%u:%hu]", saddr & 255u, saddr >> 8u & 255u,
                 saddr >> 16u & 255u, saddr >> 24u & 255u, udp->source, daddr & 255u, daddr >> 8u & 255u,
-               daddr >> 16u & 255u, daddr >> 24u & 255u, udp->dest);
+                daddr >> 16u & 255u, daddr >> 24u & 255u, udp->dest);
         log_message("Hook Function UDP", LOGGER_OK, info);
 
         unsigned char *user_data = (unsigned char *) ((unsigned char *) udp + 32);
@@ -155,113 +312,3 @@ module_exit(hook_exit)
 MODULE_LICENSE("Dual MIT/GPL");
 MODULE_AUTHOR("Tomahawkd");
 //========================Kernel Module Implementation==END================================
-
-
-
-//========================Filter Implementation==START==Author: @wzs82868996===============
-FILTER_BOOL check_tcp(struct iphdr *ip, struct tcphdr *tcp, unsigned char *data, int length) {
-    return FILTER_TRUE;
-}
-
-FILTER_BOOL check_udp(struct iphdr *ip, struct udphdr *udp, unsigned char *data, int length) {
-    return FILTER_TRUE;
-}
-//========================Filter Implementation==END==Author: @wzs82868996=================
-
-
-
-
-//========================Logger Implementation==START==Author: @Dracula1998===============
-
-struct file *file;
-
-void init_writer(void) {
-    file = filp_open("/var/log/NetFilter.log", O_RDWR | O_CREAT | O_APPEND, 0644);
-    if (IS_ERR(file)) {
-        printk(NAME"Create log file error\n");
-        file = NULL;
-        return;
-    }
-}
-
-void write_log(char *log_str, int length) {
-
-    if (log_str == NULL) return;
-
-    printk(NAME"%s", log_str);
-
-    mm_segment_t old_fs = get_fs();
-    set_fs(get_ds());
-    vfs_write(file, log_str, length, &file->f_pos);
-    set_fs(old_fs);
-}
-
-void close_writer(void) {
-    filp_close(file, NULL);
-}
-
-void get_current_time(char* time) {
-
-    struct timex txc;
-    struct rtc_time tm;
-
-    do_gettimeofday(&(txc.time));
-
-    txc.time.tv_sec -= sys_tz.tz_minuteswest * 60;
-    rtc_time_to_tm(txc.time.tv_sec, &tm);
-    sprintf(time, "%d-%02d-%02d %02d:%02d:%02d",
-            tm.tm_year + 1900,
-            tm.tm_mon + 1,
-            tm.tm_mday,
-            tm.tm_hour,
-            tm.tm_min,
-            tm.tm_sec);
-}
-
-void log_message(char *source, int level, char *message) {
-
-    if (file == NULL) return;
-    if (message == NULL || source == NULL) return;
-
-    if (level < LOG_LEVEL) return;
-
-    char time[32];
-    char log_str[512];
-    char *level_str = NULL;
-
-    switch (level) {
-        case LOGGER_DEBUG:
-            level_str = "DEBUG";
-            break;
-        case LOGGER_OK:
-            level_str = "OK";
-            break;
-        case LOGGER_LOW:
-            level_str = "LOW";
-            break;
-        case LOGGER_WARN:
-            level_str = "WARN";
-            break;
-        case LOGGER_FATAL:
-            level_str = "FATAL";
-            break;
-        default:
-            level_str = "UNKNOWN";
-            break;
-    }
-
-    get_current_time(time);
-
-    sprintf(log_str, "%s [%s] %s %s\n", time, source, level_str, message);
-    write_log(log_str, strlen(log_str));
-}
-
-//========================Logger Implementation==END=======================================
-
-
-
-
-//========================Messager Implementation==START==Author: @Vshows==================
-
-
-//========================Messager Implementation==END=====================================
