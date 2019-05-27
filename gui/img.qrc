@@ -1,9 +1,0 @@
-<RCC>
-    <qresource prefix="/">
-        <file>img/back.png</file>
-        <file>img/close.png</file>
-        <file>img/head.png</file>
-        <file>img/icon.png</file>
-        <file>img/min.png</file>
-    </qresource>
-</RCC>

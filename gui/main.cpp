@@ -1,10 +1,12 @@
-#include "mainwindow.h"
+#include "firewall.h"
 #include <QApplication>
 
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
-    MainWindow w;
+    firewall w;
+    w.setWindowTitle("NetFilterFirewall");
+    w.setFixedSize(1200, 800);
     w.show();
 
     return a.exec();
