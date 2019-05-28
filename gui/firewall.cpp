@@ -38,16 +38,13 @@ firewall::firewall(QWidget *parent) :
         item.next = NULL;
         while(!file.atEnd()) {
            line = QString::fromLocal8Bit(file.readLine().data());
-           item.sip =  line.section(":",0,0).trimmed();
-           item.dip = line.section(":",1,1).trimmed();
-           item.sport = line.section(":",2,2).trimmed().toUShort();
-           item.dport = line.section(":",3,3).trimmed().toUShort();
-           item.protocol = line.section(":",4,4).trimmed().toUShort();
-           item.sMask = line.section(":",5,5).trimmed().toShort();
-           item.dMask = line.section(":",6,6).trimmed().toShort();
+           item.sip =  line.section(":",0,0).trimmed().toUInt();
+           item.Mask = line.section(":",1,1).trimmed().toUInt();
+           item.port = line.section(":",2,2).trimmed().toUShort();
+           item.protocol = line.section(":",3,3).trimmed().toUShort();
 
 
-           if(line.section(":",7,7).trimmed().toUShort() == 1) {
+           if(line.section(":",4,4).trimmed().toUShort() == 1) {
                 item.isPermit = true;
            } else {
                item.isPermit = false;
@@ -74,20 +71,16 @@ firewall::firewall(QWidget *parent) :
 
 void firewall::addARuleToTable(Node item,unsigned int i) {
     QString sip;
-    QString dip;
+    QString mask;
     QString protocol;
     QTableWidget *ruleListTable = ui->ruleListTable;
-    sip = item.sip;
+    sip = get_string_ip_addr(item.sip);
     protocol = getProtocolName(item.protocol);
-    if(item.sMask > 0) {
-        sip += QString("/") + QString::number(item.sMask);
-    }
 
 
-    dip = item.dip;
-    if(item.dMask > 0) {
-        dip += QString("/") + QString::number(item.dMask);
-    }
+
+    mask = get_string_ip_addr(item.Mask);
+
 
     // check rows, if rows is not enough, add one rows
     unsigned int len = ruleListTable->rowCount();
@@ -97,23 +90,19 @@ void firewall::addARuleToTable(Node item,unsigned int i) {
 
     // set item
     ruleListTable->setItem(i,0,new QTableWidgetItem(sip));
-    ruleListTable->setItem(i,1,new QTableWidgetItem(dip));
-    if(item.sport) {
-        ruleListTable->setItem(i,2,new QTableWidgetItem(QString::number(item.sport)));
+    ruleListTable->setItem(i,1,new QTableWidgetItem(mask));
+    if(item.port) {
+        ruleListTable->setItem(i,2,new QTableWidgetItem(QString::number(item.port)));
     } else {
         ruleListTable->setItem(i,2,new QTableWidgetItem("ANY"));
     }
-    if(item.dport) {
-        ruleListTable->setItem(i,3,new QTableWidgetItem(QString::number(item.dport)));
-    } else {
-        ruleListTable->setItem(i,3,new QTableWidgetItem("ANY"));
-    }
-    ruleListTable->setItem(i,4,new QTableWidgetItem(protocol));
+
+    ruleListTable->setItem(i,3,new QTableWidgetItem(protocol));
 
     if(item.isPermit) {
-        ruleListTable->setItem(i,5,new QTableWidgetItem("Permit"));
+        ruleListTable->setItem(i,4,new QTableWidgetItem("Permit"));
     } else {
-        ruleListTable->setItem(i,5,new QTableWidgetItem("Reject"));
+        ruleListTable->setItem(i,4,new QTableWidgetItem("Reject"));
     }
 
 
@@ -128,34 +117,28 @@ void firewall::on_addBtn_clicked(){
 
     Node item;
     QString sIPstr = ui->sourceIPInput->text().trimmed();
-    QString dIPstr = ui->destIPInput->text().trimmed();
+    QString sMask = ui->sourceMaskInput->text().trimmed();
 
     // checked ip
-    if(!check_ip(sIPstr) || !check_ip(dIPstr)) {
+    if(!check_ip(sIPstr)) {
        warningBox("IP is not correct, please check your ip input.");
        return;
     }
 
     // checked port
     QString sPortStr = ui->sourcePortInput->text().trimmed();
-    QString dPortStr = ui->destPortInput->text().trimmed();
-    if(!check_port(sPortStr) || !check_port(dPortStr)){
+    if(!check_port(sPortStr)){
         warningBox("Port is not correct, please check your port input.");
         return;
     }
 
 
-    item.sip = sIPstr;
-    item.sport = get_port(sPortStr);
+    char *csip = sIPstr.toLocal8Bit().data();
+    item.sip = inet_addr(csip);
+    item.port = get_port(sPortStr);
 
-
-
-    item.dip = dIPstr;
-    item.dport = get_port(dPortStr);
-
-    //get mask
-    QString sMask = ui->sourceMaskInput->text().trimmed();
-    QString dMask = ui->destMaskInput->text().trimmed();
+    char *csmask = sMask.toLocal8Bit().data();
+    item.Mask = inet_addr(csmask);
 
 
     // get protocol, 0 is as any
@@ -163,13 +146,9 @@ void firewall::on_addBtn_clicked(){
     item.protocol = getProtocolNumber(protocol.toLocal8Bit().data());
     // if ICMP, port as any
     if(protocol == "ICMP") {
-        item.sport = 0;
-        item.dport = 0;
-    }
+        item.port = 0;
 
-    // if value 0, means not a subnet mask, else as subnet mask number
-    item.sMask = get_mask(sMask);
-    item.dMask = get_mask(dMask);
+    }    
 
     if(ui->buttonGroup->checkedButton()->objectName().trimmed() == "permit") {
         item.isPermit = true;
@@ -178,35 +157,7 @@ void firewall::on_addBtn_clicked(){
     }
 
 
-    // judge if has the same record, ip ,port, protocol all the same
-    bool isExisted = false;
-    for(int i = 0,len = ruleList.length(); i < len; i++) {
-        if(ruleList[i].sip != item.sip || ruleList[i].dip != item.dip) {
-            continue;
-        }
 
-        if(ruleList[i].protocol != item.protocol) {
-            continue;
-        }
-
-        // if ICMP, not need to check port
-        if(item.protocol == IPPROTO_ICMP) {
-            isExisted = true;
-            break;
-        }
-
-        if(ruleList[i].sport != item.sport || ruleList[i].dport != item.dport) {
-            continue;
-        }
-
-        isExisted = true;
-        break;
-    }
-
-    if(isExisted) {
-        warningBox("There is a consistent record! So you are failed to add!");
-        return;
-    }
 
     // add to ruleList
     ruleList.append(item);
@@ -230,12 +181,10 @@ void firewall::refreshRulesFile() {
         Node item;
         for(int i = 0, len = ruleList.length(); i < len; i++) {
             item = ruleList[i];
-            QString str = item.sip + ":"  + item.dip + ":";
-            str += QString::number(item.sport) + ":";
-            str += QString::number(item.dport) + ":";
+            QString str = QString::number(item.sip) + ":" ;
+            str += QString::number(item.Mask)+":";
+            str += QString::number(item.port) + ":";
             str += QString::number(item.protocol) + ":";
-            str += QString::number(item.sMask) + ":";
-            str += QString::number(item.dMask) + ":";
             if(item.isPermit) {
                 str += "1\n";
             } else {
@@ -301,11 +250,34 @@ void firewall::on_clearBtn_clicked(){
 
     ui->ruleListTable->clear();
 
-    Node item = {QString(),QString(),0,0,0,0,0,false};
+    Node item = {0,0,0,0,false};
+    initRuleListTable();
     ioctl(fd, FW_CLEAR_RULE,&item);
 
 }
 
+
+unsigned int firewall::inet_addr(char *str) {
+    int a,b,c,d;
+    char arr[4];
+    sscanf(str,"%d.%d.%d.%d",&a,&b,&c,&d);
+    arr[0] = a; arr[1] = b; arr[2] = c; arr[3] = d;
+    return *(unsigned int*)arr;
+}
+
+QString firewall::get_string_ip_addr(unsigned int ip) {
+    unsigned int t = 0x000000ff;
+    if(ip == 0) { // ANY
+        return "ANY";
+    }
+
+    QString re;
+    re.append(QString::number(ip & t)).append(".");
+    re.append(QString::number((ip >> 8) & t)).append(".");
+    re.append(QString::number((ip >> 16) & t)).append(".");
+    re.append(QString::number((ip >> 24) & t)).append("\0");
+    return re;
+}
 
 bool firewall::check_ip(QString ipstr){
     QRegExp reg("^[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}(\\/[0-9]{1,2})?$");
@@ -422,8 +394,8 @@ void firewall::initRuleListTable() {
     QTableWidget *ruleListTable = ui->ruleListTable;
 
     ruleListTable->setRowCount(15);
-    ruleListTable->setColumnCount(6);
-    header << "source ip" << "destination ip" << "S port" << "D port" << "protocol" << "action";
+    ruleListTable->setColumnCount(5);
+    header << "source ip"  << "Source Mask"<< "Source port" <<  "protocol" << "action";
     ruleListTable->setWindowTitle("rule list table");
     ruleListTable->setHorizontalHeaderLabels(header);
     ruleListTable->setEditTriggers(QAbstractItemView::NoEditTriggers);   // set readonly
@@ -433,13 +405,13 @@ void firewall::initRuleListTable() {
     ruleListTable->verticalHeader()->setStyleSheet("QHeaderView::section {  background-color:white;color: black;padding-left: 4px;border: 1px solid #6c6c6c}");   //设置纵列的边框项的字体颜色模式等
     ruleListTable->horizontalHeader()->setStretchLastSection(true);
 
-    ruleListTable->setColumnWidth(0,160);
-    ruleListTable->setColumnWidth(1,160);
-    ruleListTable->setColumnWidth(2,60);
-    ruleListTable->setColumnWidth(3,60);
-    ruleListTable->setColumnWidth(4,80);
-    ruleListTable->setColumnWidth(5,60);
-    ruleListTable->setColumnWidth(6,60);
+    ruleListTable->setColumnWidth(0,140);
+    ruleListTable->setColumnWidth(1,140);
+    ruleListTable->setColumnWidth(2,120);
+    ruleListTable->setColumnWidth(3,80);
+    ruleListTable->setColumnWidth(4,50);
+
+
 
 }
 

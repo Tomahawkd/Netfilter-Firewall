@@ -27,13 +27,10 @@
 
 class Node{
 public:
-  QString sip;
-  QString dip;
-  unsigned short sport;
-  unsigned short dport;
+  unsigned int sip;
+  unsigned short port;
   unsigned short protocol;
-  unsigned short sMask;
-  unsigned short dMask;
+  unsigned int Mask;
   bool isPermit;
   struct Node *next;          //单链表的指针域
 };
@@ -50,6 +47,8 @@ public:
     explicit firewall(QWidget *parent = 0);
     ~firewall();
     void warningBox(QString str);
+    unsigned int inet_addr(char *str);
+    QString get_string_ip_addr(unsigned int ip);
     bool check_ip(QString ipstr);
     bool check_port(QString portStr);
     unsigned short get_port(QString portStr);
