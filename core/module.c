@@ -529,7 +529,6 @@ static int __init hook_init(void) {
     cdev_add(&netfilter_cdev, devno_m, 1);
     
     head = (Node *)kmalloc(sizeof(Node), 0);
-    tail = (Node *)kmalloc(sizeof(Node), 0);
     head->next = NULL;
     tail = head;
 
