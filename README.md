@@ -12,4 +12,4 @@ makefile instead
 - You should check repo whether it is **up-to-date** and you should **UPDATE** repo
 if dated
 
-- If you are a new-comer, please **RUN** `init.sh` first
+- Character device registeration and usage are untested, we issued the bug but not solved yet.
