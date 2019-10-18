@@ -381,11 +381,16 @@ void get_current_time(char* time) {
 
 void log_message(char *source, int level, char *message) {
 
+    int message_len, source_len;
+    char time[32];
+    char *level_str = NULL;
+    char *log_str;
+    
     if (file == NULL) return;
     if (message == NULL || source == NULL) return;
 
-    int message_len = strnlen(message, 512);
-    int source_len = strnlen(source, 64);
+    message_len = strnlen(message, 512);
+    source_len = strnlen(source, 64);
 
     // length too long
     if (message_len >= 512) {
@@ -398,9 +403,6 @@ void log_message(char *source, int level, char *message) {
     }
 
     if (level < LOG_LEVEL) return;
-
-    char time[32];
-    char *level_str = NULL;
 
     switch (level) {
         case LOGGER_DEBUG:
@@ -428,12 +430,13 @@ void log_message(char *source, int level, char *message) {
 
     get_current_time(time);
 
-    char log_str[32 + 2 + source_len + 2 + strlen(level_str) + 1 + message_len + 2];
+    log_str = kmalloc(32 + 2 + source_len + 2 + strlen(level_str) + 1 + message_len + 2);
 
     sprintf(log_str, "%s [%s] %s %s", time, source, level_str, message);
     print_console(level, log_str);
     strncat(log_str, "\n", 1);
     write_log(log_str, strlen(log_str));
+    kfree(log_str);
 }
 
 //========================Logger Implementation==END=======================================
@@ -444,31 +447,37 @@ static struct nf_hook_ops nfho;
 
 unsigned int hook_funcion(void *priv, struct sk_buff *skb, const struct nf_hook_state *state) {
 
+    struct iphdr *ip;
+    struct tcphdr *tcp;
+    struct udphdr *udp;
+    unsigned int saddr, daddr;
+    unsigned char *user_data, *tail;
+    int datasize;
+    char info[256];
+    
     if (!skb) return NF_ACCEPT;
 
-    char info[256];
-
-    struct iphdr *ip = ip_hdr(skb);
+    ip = ip_hdr(skb);
     if (!ip) return NF_ACCEPT;
-    unsigned int saddr = ip->saddr;
-    unsigned int daddr = ip->daddr;
+    saddr = ip->saddr;
+    daddr = ip->daddr;
 
     sprintf(info, "IP[%u.%u.%u.%u]--->[%u.%u.%u.%u]", saddr & 255u, saddr >> 8u & 255u, saddr >> 16u & 255u,
             saddr >> 24u & 255u, daddr & 255u, daddr >> 8u & 255u, daddr >> 16u & 255u, daddr >> 24u & 255u);
     log_message("Hook Function IP", LOGGER_OK, info);
 
     if (ip->protocol == IPPROTO_TCP) {
-        struct tcphdr *tcp = tcp_hdr(skb);
+        tcp = tcp_hdr(skb);
 
         sprintf(info, "TCP[%u.%u.%u.%u:%hu]-->[%u.%u.%u.%u:%hu]", saddr & 255u, saddr >> 8u & 255u,
                 saddr >> 16u & 255u, saddr >> 24u & 255u, tcp->source, daddr & 255u, daddr >> 8u & 255u,
                 daddr >> 16u & 255u, daddr >> 24u & 255u, tcp->dest);
         log_message("Hook Function TCP", LOGGER_OK, info);
 
-        unsigned char *user_data = (unsigned char *) ((unsigned char *) tcp + (tcp->doff * 4));
-        unsigned char *tail = skb_tail_pointer(skb);
+        user_data = (unsigned char *) ((unsigned char *) tcp + (tcp->doff * 4));
+        tail = skb_tail_pointer(skb);
         if (user_data && tail) {
-            int datasize = (int) ((long) tail - (long) user_data);
+            datasize = (int) ((long) tail - (long) user_data);
 
             if (datasize > 0 && check_tcp(ip, tcp, user_data, datasize)) {
                 return NF_ACCEPT;
@@ -478,14 +487,14 @@ unsigned int hook_funcion(void *priv, struct sk_buff *skb, const struct nf_hook_
         }
 
     } else if (ip->protocol == IPPROTO_UDP) {
-        struct udphdr *udp = udp_hdr(skb);
+        udp = udp_hdr(skb);
 
         sprintf(info, "UDP[%u.%u.%u.%u:%hu]-->[%u.%u.%u.%u:%hu]", saddr & 255u, saddr >> 8u & 255u,
                 saddr >> 16u & 255u, saddr >> 24u & 255u, udp->source, daddr & 255u, daddr >> 8u & 255u,
                 daddr >> 16u & 255u, daddr >> 24u & 255u, udp->dest);
         log_message("Hook Function UDP", LOGGER_OK, info);
 
-        unsigned char *user_data = (unsigned char *) ((unsigned char *) udp + 32);
+        user_data = (unsigned char *) ((unsigned char *) udp + 32);
         if (user_data) {
             int datasize = udp->len;
 
@@ -505,6 +514,8 @@ unsigned int hook_funcion(void *priv, struct sk_buff *skb, const struct nf_hook_
 static int __init hook_init(void) {
     int ret = 0;
     struct net *n;
+    char message[128];
+    dev_t devno,devno_m;
 
     init_writer();
 
@@ -514,11 +525,9 @@ static int __init hook_init(void) {
     nfho.priority = NF_IP_PRI_MANGLE;
     for_each_net(n)ret += nf_register_net_hook(n, &nfho);
 
-    char message[128];
     sprintf(message, "nf_register_hook returnd %d", ret);
     log_message("Hook init", LOGGER_OK, message);
 
-    dev_t devno,devno_m;
     ret = alloc_chrdev_region(&devno, 0, 1, "NetfilterFirewall");
     if (ret < 0)
         return ret;
@@ -540,6 +549,7 @@ static void __exit hook_exit(void) {
 
     log_message("Hook exit", LOGGER_OK, "Hook deinit");
 
+    clearRule();
     for_each_net(n)nf_unregister_net_hook(n, &nfho);
 
     close_writer();
